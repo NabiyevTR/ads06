@@ -1,6 +1,5 @@
 package ru.geekbrains.ntr_ads06;
 
-import java.util.function.Consumer;
 import java.util.Stack;
 
 public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
@@ -15,27 +14,45 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
         }
     }
 
+    public TreeImpl() {
+        this(DEFAULT_MAX_HEIGHT);
+    }
+
+    public TreeImpl(int maxHeight) throws IllegalArgumentException {
+        if (maxHeight < 0) throw new IllegalArgumentException("The maximum tree height must not be less than zero");
+        this.maxHeight = maxHeight;
+    }
+
     private int size;
     private Node<E> root;
+    private int maxHeight;
+    private static final int DEFAULT_MAX_HEIGHT = 10;
 
 
     @Override
-    public void add(E value) {
+    public boolean add(E value) {
+        if (maxHeight <= 0) return false;
+
         Node<E> newNode = new Node<>(value);
 
         if (isEmpty()) {
             root = newNode;
             size++;
-            return;
+            return true;
         }
 
         NodeAndParent nodeAndParent = doFind(value);
         if (nodeAndParent.current != null) {
             // nodeAndParent.current.setValue(value)
-            return;
+            return false;
+        }
+
+        if ((height(root) - height(nodeAndParent.parent)+1) >= maxHeight) {
+            return false;
         }
 
         Node<E> previous = nodeAndParent.parent;
+
 
 //        Consumer<Node<E>> setter = previous.isLeftChild(value) ? previous::setLeftChild : previous::setRightChild;
 //        setter.accept(newNode);
@@ -47,6 +64,7 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
         }
 
         size++;
+        return true;
     }
 
     @Override
@@ -65,8 +83,7 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
             previous = current;
             if (current.isLeftChild(value)) {
                 current = current.getLeftChild();
-            }
-            else {
+            } else {
                 current = current.getRightChild();
             }
         }
@@ -92,8 +109,7 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
             } else {
                 parentNode.setRightChild(null);
             }
-        }
-        else if (removedNode.hasOnlyOneChild()) {
+        } else if (removedNode.hasOnlyOneChild()) {
             Node<E> childNode = removedNode.getLeftChild() != null
                     ? removedNode.getLeftChild()
                     : removedNode.getRightChild();
@@ -105,8 +121,7 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
             } else {
                 parentNode.setRightChild(childNode);
             }
-        }
-        else {
+        } else {
             Node<E> successor = getSuccessor(removedNode);
             if (removedNode == root) {
                 root = successor;
@@ -197,6 +212,22 @@ public class TreeImpl<E extends Comparable<? super E>> implements Tree<E> {
     @Override
     public int size() {
         return size;
+    }
+
+    @Override
+    public boolean isBalanced() {
+        return isBalanced(root);
+    }
+
+    private boolean isBalanced(Node node) {
+        return (node == null) ||
+                isBalanced(node.getLeftChild()) &&
+                        isBalanced(node.getRightChild()) &&
+                        Math.abs(height(node.getLeftChild()) - height(node.getRightChild())) <= 1;
+    }
+
+    private int height(Node node) {
+        return node == null ? 0 : 1 + Math.max(height(node.getLeftChild()), height(node.getRightChild()));
     }
 
     @Override
